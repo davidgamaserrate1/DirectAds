@@ -1,6 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Users,
   PlusCircle,
@@ -12,6 +14,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { useClients, useClientTypes } from "@/hooks/useClients";
+import { clientSchema, ClientFormData } from "@/lib/validators";
 import { Client } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,12 +32,20 @@ export default function ClientsPage() {
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-
-  // Form state
-  const [formName, setFormName] = useState("");
-  const [formEmail, setFormEmail] = useState("");
-  const [formType, setFormType] = useState("");
   const [customType, setCustomType] = useState(false);
+
+  const {
+    register: registerField,
+    handleSubmit,
+    reset,
+    setValue,
+    watch,
+    formState: { errors },
+  } = useForm<ClientFormData>({
+    resolver: zodResolver(clientSchema),
+  });
+
+  const formType = watch("type", "");
 
   const filtered = useMemo(() =>
     clients.filter((c) => {
@@ -53,37 +64,31 @@ export default function ClientsPage() {
 
   const openCreateModal = () => {
     setEditingClient(null);
-    setFormName("");
-    setFormEmail("");
-    setFormType("");
+    reset({ name: "", email: "", type: "" });
     setCustomType(false);
     setModalOpen(true);
   };
 
   const openEditModal = (client: Client) => {
     setEditingClient(client);
-    setFormName(client.name);
-    setFormEmail(client.email);
-    setFormType(client.type);
+    reset({ name: client.name, email: client.email, type: client.type });
     setCustomType(!types.includes(client.type));
     setModalOpen(true);
   };
 
-  const handleSave = async () => {
-     
+  const onSubmit = async (data: ClientFormData) => {
     setSaving(true);
     try {
-      const payload = { name: formName, email: formEmail, type: formType };
       if (editingClient) {
-        await update(editingClient.id, payload);
+        await update(editingClient.id, data);
         toast("Cliente atualizado!");
       } else {
-        await create(payload);
+        await create(data);
         toast("Cliente criado!");
       }
       setModalOpen(false);
-    } catch {
-      toast("Erro ao salvar cliente", "error");
+    } catch(error: any) {
+      toast(error.message || "Erro ao salvar cliente", "error");
     }
     setSaving(false);
   };
@@ -93,8 +98,9 @@ export default function ClientsPage() {
     try {
       await remove(deleteId);
       toast("Cliente excluído!");
-    } catch {
-      toast("Erro ao excluir cliente", "error");
+    } catch(error: any) {
+      console.log('error' , error);
+      toast(error.message || "Erro ao excluir cliente", "error");
     }
     setDeleteId(null);
   };
@@ -304,28 +310,20 @@ export default function ClientsPage() {
         onClose={() => setModalOpen(false)}
         title={editingClient ? "Editar Cliente" : "Novo Cliente"}
       >
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-[var(--color-text)] mb-1.5">
-              Nome
-            </label>
-            <Input
-              placeholder="Nome do cliente"
-              value={formName}
-              onChange={(e) => setFormName(e.target.value)}
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-[var(--color-text)] mb-1.5">
-              E-mail
-            </label>
-            <Input
-              type="email"
-              placeholder="email@exemplo.com"
-              value={formEmail}
-              onChange={(e) => setFormEmail(e.target.value)}
-            />
-          </div>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <Input
+            label="Nome"
+            placeholder="Nome do cliente"
+            error={errors.name?.message}
+            {...registerField("name")}
+          />
+          <Input
+            label="E-mail"
+            type="email"
+            placeholder="email@exemplo.com"
+            error={errors.email?.message}
+            {...registerField("email")}
+          />
           <div>
             <label className="block text-sm font-medium text-[var(--color-text)] mb-1.5">
               Segmento
@@ -336,7 +334,7 @@ export default function ClientsPage() {
                   <button
                     key={t}
                     type="button"
-                    onClick={() => setFormType(t)}
+                    onClick={() => setValue("type", t, { shouldValidate: true })}
                     className="px-3 py-1.5 text-sm rounded-lg border transition-all cursor-pointer"
                     style={{
                       borderRadius: "var(--radius-md)",
@@ -350,7 +348,7 @@ export default function ClientsPage() {
                 ))}
                 <button
                   type="button"
-                  onClick={() => { setCustomType(true); setFormType(""); }}
+                  onClick={() => { setCustomType(true); setValue("type", "", { shouldValidate: false }); }}
                   className="px-3 py-1.5 text-sm rounded-lg border border-dashed border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] transition-all cursor-pointer"
                   style={{ borderRadius: "var(--radius-md)" }}
                 >
@@ -362,32 +360,35 @@ export default function ClientsPage() {
               <div className="flex gap-2">
                 <Input
                   placeholder="Digite o novo segmento..."
-                  value={formType}
-                  onChange={(e) => setFormType(e.target.value)}
+                  error={errors.type?.message}
+                  {...registerField("type")}
                   autoFocus
                 />
                 {types.length > 0 && (
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => { setCustomType(false); setFormType(""); }}
+                    onClick={() => { setCustomType(false); setValue("type", "", { shouldValidate: false }); }}
                   >
                     Cancelar
                   </Button>
                 )}
               </div>
             )}
+            {errors.type?.message && !customType && (
+              <span className="text-xs text-[var(--color-error)] mt-1 block">{errors.type.message}</span>
+            )}
           </div>
           <div className="flex gap-3 justify-end pt-2">
-            <Button variant="secondary" onClick={() => setModalOpen(false)}>
+            <Button variant="secondary" type="button" onClick={() => setModalOpen(false)}>
               Cancelar
             </Button>
-            <Button onClick={handleSave} disabled={saving}>
+            <Button type="submit" disabled={saving}>
               {saving && <Loader2 className="w-4 h-4 animate-spin" />}
               {editingClient ? "Atualizar" : "Criar"}
             </Button>
           </div>
-        </div>
+        </form>
       </Modal>
 
       {/* Delete Modal */}

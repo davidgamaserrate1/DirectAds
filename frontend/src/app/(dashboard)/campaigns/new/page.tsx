@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
@@ -10,6 +12,7 @@ import {
 } from "lucide-react";
 import { useCampaigns } from "@/hooks/useCampaigns";
 import { useClientTypes } from "@/hooks/useClients";
+import { campaignSchema, CampaignFormData } from "@/lib/validators";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -20,13 +23,22 @@ export default function NewCampaignPage() {
   const { toast } = useToast();
   const { types: clientTypes } = useClientTypes();
   const { create, send, generateContent } = useCampaigns();
-  const [name, setName] = useState("");
-  const [objective, setObjective] = useState("");
-  const [clientType, setClientType] = useState("");
-  const [content, setContent] = useState("");
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    formState: { errors },
+  } = useForm<CampaignFormData>({
+    resolver: zodResolver(campaignSchema),
+    defaultValues: { name: "", objective: "", clientType: "", content: "" },
+  });
   const [generating, setGenerating] = useState(false);
   const [saving, setSaving] = useState(false);
   const [sendAfterSave, setSendAfterSave] = useState(false);
+
+  const clientType = watch("clientType");
+  const objective = watch("objective");
 
   const handleGenerate = async () => {
     if (!clientType || !objective) {
@@ -36,7 +48,7 @@ export default function NewCampaignPage() {
     setGenerating(true);
     try {
       const generatedContent = await generateContent(clientType, objective);
-      setContent(generatedContent);
+      setValue("content", generatedContent, { shouldValidate: true });
       toast("Conteúdo gerado com IA!");
     } catch {
       toast("Erro ao gerar conteúdo com IA", "error");
@@ -44,15 +56,11 @@ export default function NewCampaignPage() {
     setGenerating(false);
   };
 
-  const handleSave = async (shouldSend = false) => {
-    if (!name || !clientType || !objective || !content) {
-      toast("Preencha todos os campos", "error");
-      return;
-    }
+  const onSubmit = async (data: CampaignFormData, shouldSend = false) => {
     setSaving(true);
     setSendAfterSave(shouldSend);
     try {
-      const campaign = await create({ name, clientType, objective, content });
+      const campaign = await create(data);
 
       if (shouldSend) {
         try {
@@ -93,18 +101,14 @@ export default function NewCampaignPage() {
       </div>
 
       {/* Form */}
-      <div className="space-y-5">
+      <form className="space-y-5">
         {/* Nome */}
-        <div>
-          <label className="block text-sm font-medium text-[var(--color-text)] mb-1.5">
-            Nome da Campanha
-          </label>
-          <Input
-            placeholder="Ex: Black Friday Fitness"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
-        </div>
+        <Input
+          label="Nome da Campanha"
+          placeholder="Ex: Black Friday Fitness"
+          error={errors.name?.message}
+          {...register("name")}
+        />
 
         {/* Segmento do cliente */}
         <div>
@@ -112,8 +116,7 @@ export default function NewCampaignPage() {
             Segmento do Cliente
           </label>
           <select
-            value={clientType}
-            onChange={(e) => setClientType(e.target.value)}
+            {...register("clientType")}
             className="w-full border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] text-sm outline-none transition-all focus:ring-2 focus:ring-[var(--color-primary)]"
             style={{ padding: "12px 16px", borderRadius: "var(--radius-md)" }}
           >
@@ -126,20 +129,19 @@ export default function NewCampaignPage() {
               </option>
             ))}
           </select>
+          {errors.clientType?.message && (
+            <span className="text-xs text-[var(--color-error)] mt-1 block">{errors.clientType.message}</span>
+          )}
         </div>
 
         {/* Objetivo */}
-        <div>
-          <label className="block text-sm font-medium text-[var(--color-text)] mb-1.5">
-            Objetivo
-          </label>
-          <Textarea
-            placeholder="Descreva o objetivo da campanha..."
-            rows={3}
-            value={objective}
-            onChange={(e) => setObjective(e.target.value)}
-          />
-        </div>
+        <Textarea
+          label="Objetivo"
+          placeholder="Descreva o objetivo da campanha..."
+          rows={3}
+          error={errors.objective?.message}
+          {...register("objective")}
+        />
 
         {/* Divider + AI button */}
         <div
@@ -170,8 +172,8 @@ export default function NewCampaignPage() {
           <Textarea
             placeholder="O conteúdo será gerado pela IA ou você pode escrever manualmente..."
             rows={10}
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
+            error={errors.content?.message}
+            {...register("content")}
           />
         </div>
 
@@ -179,7 +181,8 @@ export default function NewCampaignPage() {
         <div className="flex flex-col sm:flex-row gap-3 pt-2">
           <Button
             variant="secondary"
-            onClick={() => handleSave(false)}
+            type="button"
+            onClick={handleSubmit((data) => onSubmit(data, false))}
             disabled={saving}
             className="flex-1"
           >
@@ -189,7 +192,8 @@ export default function NewCampaignPage() {
             Salvar Rascunho
           </Button>
           <Button
-            onClick={() => handleSave(true)}
+            type="button"
+            onClick={handleSubmit((data) => onSubmit(data, true))}
             disabled={saving}
             className="flex-1"
           >
@@ -201,7 +205,7 @@ export default function NewCampaignPage() {
             Salvar e Enviar
           </Button>
         </div>
-      </div>
+      </form>
     </div>
   );
 }
