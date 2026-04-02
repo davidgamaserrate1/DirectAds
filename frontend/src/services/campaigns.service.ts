@@ -8,6 +8,8 @@ export interface CreateCampaignParams {
   content: string;
 }
 
+export type UpdateCampaignParams = Partial<CreateCampaignParams>;
+
 export interface GenerateContentParams {
   clientType: string;
   objective: string;
@@ -26,6 +28,11 @@ export const campaignsService = {
 
   async create(params: CreateCampaignParams): Promise<Campaign> {
     const { data } = await api.post<Campaign>("/campaigns", params);
+    return data;
+  },
+
+  async update(id: string, params: UpdateCampaignParams): Promise<Campaign> {
+    const { data } = await api.put<Campaign>(`/campaigns/${id}`, params);
     return data;
   },
 

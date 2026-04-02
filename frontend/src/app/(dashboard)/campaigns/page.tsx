@@ -9,6 +9,7 @@ import {
   MoreVertical,
   Send,
   Pencil,
+  Eye,
   Trash2,
   Calendar,
 } from "lucide-react";
@@ -257,8 +258,11 @@ export default function CampaignsPage() {
                         className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-[var(--color-text)] hover:bg-[var(--color-surface-2)] transition-colors"
                         onClick={() => setOpenMenuId(null)}
                       >
-                        <Pencil className="w-3.5 h-3.5" />
-                        Editar
+                        {campaign.status === "DRAFT" ? (
+                          <><Pencil className="w-3.5 h-3.5" /> Editar</>
+                        ) : (
+                          <><Eye className="w-3.5 h-3.5" /> Visualizar</>
+                        )}
                       </Link>
                       <button
                         onClick={() => {
