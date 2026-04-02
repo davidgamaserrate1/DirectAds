@@ -1,0 +1,70 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
+}
+
+model Client {
+  id           String        @id @default(uuid())
+  name         String
+  email        String        @unique
+  type         String
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  campaignLogs CampaignLog[]
+
+  @@index([type])
+  @@map("clients")
+}
+
+enum CampaignStatus {
+  DRAFT
+  SENT
+}
+
+model Campaign {
+  id         String         @id @default(uuid())
+  name       String
+  objective  String
+  clientType String
+  content    String         @default("")
+  status     CampaignStatus @default(DRAFT)
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+  logs       CampaignLog[]
+
+  @@map("campaigns")
+}
+
+enum CampaignLogStatus {
+  SENT
+  ERROR
+}
+
+model CampaignLog {
+  id         String            @id @default(uuid())
+  campaignId String
+  clientId   String
+  status     CampaignLogStatus
+  error      String?
+  createdAt  DateTime          @default(now())
+
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  client   Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@map("campaign_logs")
+}
