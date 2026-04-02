@@ -1,0 +1,86 @@
+@import "tailwindcss";
+
+:root {
+  --font-family: "Bai Jamjuree", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  --color-primary: #00a6e2;
+  --color-primary-hover: #0095cc;
+  --color-primary-glow: rgba(0, 166, 226, 0.4);
+  --color-accent: #ea5153;
+  --color-accent-hover: #d94547;
+  --color-accent-glow: rgba(234, 81, 83, 0.4);
+  --color-bg: #f1f0f4;
+  --color-surface: #ffffff;
+  --color-surface-2: rgba(255, 255, 255, 0.8);
+  --color-border: rgba(11, 14, 29, 0.1);
+  --color-text: #0b0e1d;
+  --color-text-secondary: #5a6070;
+  --accent-gradient: linear-gradient(135deg, #00a6e2, #00a6e2 25%, #ea5153 75%, #ea5153);
+  --surface-gradient: linear-gradient(180deg, rgba(0, 166, 226, 0.05), transparent);
+  --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.08);
+  --shadow-medium: 0 8px 30px rgba(0, 0, 0, 0.12);
+  --shadow-glow-primary: 0 0 30px var(--color-primary-glow);
+  --shadow-glow-accent: 0 0 20px var(--color-accent-glow);
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-full: 9999px;
+  --color-success: #10b981;
+  --color-error: var(--color-accent);
+  --color-warning: #f59e0b;
+  --nav-bg: rgba(241, 240, 244, 0.85);
+}
+
+[data-theme="dark"] {
+  --color-bg: #0b0e1d;
+  --color-surface: rgba(20, 25, 40, 0.8);
+  --color-surface-2: rgba(30, 38, 58, 0.6);
+  --color-border: rgba(163, 204, 238, 0.12);
+  --color-text: #f1f0f4;
+  --color-text-secondary: #a3b1c6;
+  --color-primary: #00b8f5;
+  --color-primary-hover: #00a6e2;
+  --color-primary-glow: rgba(0, 184, 245, 0.35);
+  --nav-bg: rgba(11, 14, 29, 0.85);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-family);
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  line-height: 1.5;
+  letter-spacing: -0.01em;
+  transition: background-color 0.3s, color 0.3s;
+  overflow-x: hidden;
+}
+
+body::before,
+body::after {
+  content: "";
+  position: fixed;
+  width: 50%;
+  height: 50%;
+  filter: blur(120px);
+  z-index: -1;
+  pointer-events: none;
+}
+
+body::before {
+  top: -20%;
+  left: -10%;
+  background: radial-gradient(circle, var(--color-primary-glow) 0%, transparent 70%);
+  opacity: 0.35;
+}
+
+body::after {
+  bottom: -20%;
+  right: -10%;
+  background: radial-gradient(circle, var(--color-accent-glow, rgba(234, 81, 83, 0.4)) 0%, transparent 70%);
+  opacity: 0.25;
+}

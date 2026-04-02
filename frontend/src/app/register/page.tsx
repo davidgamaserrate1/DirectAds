@@ -1,0 +1,107 @@
+"use client";
+
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { Bot } from "lucide-react";
+import api from "@/lib/api";
+import { registerSchema, RegisterFormData } from "@/lib/validators";
+import { AuthResponse } from "@/types";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+
+export default function RegisterPage() {
+  const router = useRouter();
+  const [error, setError] = useState("");
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<RegisterFormData>({
+    resolver: zodResolver(registerSchema),
+  });
+
+  const onSubmit = async (data: RegisterFormData) => {
+    setError("");
+    try {
+      const res = await api.post<AuthResponse>("/auth/register", data);
+      localStorage.setItem("token", res.data.accessToken);
+      localStorage.setItem("user", JSON.stringify(res.data.user));
+      router.push("/dashboard");
+    } catch {
+      setError("Erro ao criar conta. Email já pode estar em uso.");
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex">
+      <div className="hidden lg:flex lg:w-1/2 items-center justify-center p-12" style={{ background: "var(--accent-gradient)" }}>
+        <div className="text-white max-w-md">
+          <div className="flex items-center gap-3 mb-8">
+            <Bot className="w-12 h-12" />
+            <h1 className="text-3xl font-bold">AI Campaign Manager</h1>
+          </div>
+          <p className="text-lg opacity-90">
+            Crie sua conta e comece a gerenciar campanhas inteligentes com o
+            poder da IA.
+          </p>
+        </div>
+      </div>
+
+      <div className="flex-1 flex items-center justify-center p-8">
+        <div className="w-full max-w-[400px]">
+          <div className="flex items-center gap-2 mb-8 lg:hidden">
+            <Bot className="w-8 h-8 text-[var(--color-primary)]" />
+            <h1 className="text-xl font-bold">AI Campaign Manager</h1>
+          </div>
+
+          <h2 className="text-2xl font-bold mb-2">Criar conta</h2>
+          <p className="text-[var(--color-text-secondary)] mb-6">
+            Preencha os dados para criar sua conta
+          </p>
+
+          {error && (
+            <div className="mb-4 p-3 border border-[var(--color-error)] text-[var(--color-error)] text-sm" style={{ borderRadius: "var(--radius-md)", background: "rgba(234,81,83,0.08)" }}>
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5">
+            <Input
+              label="Nome"
+              placeholder="Seu nome"
+              error={errors.name?.message}
+              {...register("name")}
+            />
+            <Input
+              label="Email"
+              type="email"
+              placeholder="seu@email.com"
+              error={errors.email?.message}
+              {...register("email")}
+            />
+            <Input
+              label="Senha"
+              type="password"
+              placeholder="••••••"
+              error={errors.password?.message}
+              {...register("password")}
+            />
+            <Button type="submit" loading={isSubmitting} className="w-full mt-2">
+              Criar conta
+            </Button>
+          </form>
+
+          <p className="text-sm text-center mt-6 text-[var(--color-text-secondary)]">
+            Já tem conta?{" "}
+            <Link href="/login" className="text-[var(--color-primary)] font-medium hover:underline">
+              Entrar
+            </Link>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
