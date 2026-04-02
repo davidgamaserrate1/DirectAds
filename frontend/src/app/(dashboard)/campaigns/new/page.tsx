@@ -30,7 +30,7 @@ export default function NewCampaignPage() {
 
   const handleGenerate = async () => {
     if (!clientType || !objective) {
-      toast("Preencha o tipo de cliente e o objetivo primeiro", "error");
+      toast("Preencha o segmento do cliente e o objetivo primeiro", "error");
       return;
     }
     setGenerating(true);
@@ -106,10 +106,10 @@ export default function NewCampaignPage() {
           />
         </div>
 
-        {/* Tipo de cliente */}
+        {/* Segmento do cliente */}
         <div>
           <label className="block text-sm font-medium text-[var(--color-text)] mb-1.5">
-            Tipo de Cliente
+            Segmento do Cliente
           </label>
           <select
             value={clientType}
@@ -118,7 +118,7 @@ export default function NewCampaignPage() {
             style={{ padding: "12px 16px", borderRadius: "var(--radius-md)" }}
           >
             <option value="" disabled>
-              Selecione um tipo
+              Selecione um segmento
             </option>
             {clientTypes.map((type) => (
               <option key={type} value={type}>

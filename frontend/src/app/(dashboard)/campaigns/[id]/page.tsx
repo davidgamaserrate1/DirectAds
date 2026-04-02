@@ -127,7 +127,7 @@ export default function CampaignDetailPage() {
             label: "Criado em",
             value: formatDate(campaign.createdAt),
           },
-          { icon: Users, label: "Tipo", value: campaign.clientType },
+          { icon: Users, label: "Segmento", value: campaign.clientType },
           {
             icon: CheckCircle,
             label: "Envios OK",

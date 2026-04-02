@@ -70,10 +70,7 @@ export default function ClientsPage() {
   };
 
   const handleSave = async () => {
-    if (!formName || !formEmail || !formType) {
-      toast("Preencha todos os campos", "error");
-      return;
-    }
+     
     setSaving(true);
     try {
       const payload = { name: formName, email: formEmail, type: formType };
@@ -156,7 +153,7 @@ export default function ClientsPage() {
           className="border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] text-sm outline-none transition-all focus:ring-2 focus:ring-[var(--color-primary)]"
           style={{ padding: "8px 16px", borderRadius: "var(--radius-md)" }}
         >
-          <option value="">Todos os tipos</option>
+          <option value="">Todos os segmentos</option>
           {types.map((t) => (
             <option key={t} value={t}>
               {t}
@@ -203,7 +200,7 @@ export default function ClientsPage() {
                     E-mail
                   </th>
                   <th className="text-left text-xs font-medium text-[var(--color-text-secondary)] px-4 py-3">
-                    Tipo
+                    Segmento
                   </th>
                   <th className="text-right text-xs font-medium text-[var(--color-text-secondary)] px-4 py-3">
                     Ações
@@ -331,7 +328,7 @@ export default function ClientsPage() {
           </div>
           <div>
             <label className="block text-sm font-medium text-[var(--color-text)] mb-1.5">
-              Tipo
+              Segmento
             </label>
             {types.length > 0 && !customType && (
               <div className="flex flex-wrap gap-2 mb-2">
@@ -357,14 +354,14 @@ export default function ClientsPage() {
                   className="px-3 py-1.5 text-sm rounded-lg border border-dashed border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] transition-all cursor-pointer"
                   style={{ borderRadius: "var(--radius-md)" }}
                 >
-                  + Novo tipo
+                  + Novo segmento
                 </button>
               </div>
             )}
             {(customType || types.length === 0) && (
               <div className="flex gap-2">
                 <Input
-                  placeholder="Digite o novo tipo..."
+                  placeholder="Digite o novo segmento..."
                   value={formType}
                   onChange={(e) => setFormType(e.target.value)}
                   autoFocus
