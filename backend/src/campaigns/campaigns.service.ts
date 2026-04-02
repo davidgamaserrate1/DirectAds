@@ -17,7 +17,7 @@ export class CampaignsService {
   ) {}
 
   async create(dto: CreateCampaignDto) {
-    const clientsWithType = await this.clientsService.findByType(dto.clientType);
+    const [clientsWithType] = await this.clientsService.findByType(dto.clientType);
     if (!clientsWithType) {
       throw new BadRequestException(
         `Nenhum cliente encontrado com o tipo "${dto.clientType}"`,
