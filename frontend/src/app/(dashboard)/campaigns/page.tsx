@@ -17,6 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { useToast } from "@/components/ui/toast";
+import { getErrorMessage } from "@/lib/api";
 
 type FilterTab = "all" | "DRAFT" | "SENT";
 
@@ -50,8 +51,8 @@ export default function CampaignsPage() {
     try {
       await remove(deleteId);
       toast("Campanha excluída com sucesso");
-    } catch {
-      toast("Erro ao excluir campanha", "error");
+    } catch (error) {
+      toast(getErrorMessage(error, "Erro ao excluir campanha"), "error");
     }
     setDeleteId(null);
   };
@@ -61,8 +62,8 @@ export default function CampaignsPage() {
     try {
       const result = await send(id);
       toast(result.message || "Campanha enviada!");
-    } catch {
-      toast("Erro ao enviar campanha", "error");
+    } catch (error) {
+      toast(getErrorMessage(error, "Erro ao enviar campanha"), "error");
     }
     setSendingId(null);
     setOpenMenuId(null);

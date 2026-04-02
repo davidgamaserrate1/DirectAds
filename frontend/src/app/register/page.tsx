@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Bot } from "lucide-react";
 import { registerSchema, RegisterFormData } from "@/lib/validators";
+import { getErrorMessage } from "@/lib/api";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/auth-context";
@@ -28,8 +29,8 @@ export default function RegisterPage() {
     try {
       await registerUser(data);
       router.push("/dashboard");
-    } catch {
-      setError("Erro ao criar conta. Email já pode estar em uso.");
+    } catch (err) {
+      setError(getErrorMessage(err, "Erro ao criar conta"));
     }
   };
 

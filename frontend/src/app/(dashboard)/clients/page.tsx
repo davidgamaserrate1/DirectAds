@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { useClients, useClientTypes } from "@/hooks/useClients";
 import { clientSchema, ClientFormData } from "@/lib/validators";
+import { getErrorMessage } from "@/lib/api";
 import { Client } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -87,8 +88,8 @@ export default function ClientsPage() {
         toast("Cliente criado!");
       }
       setModalOpen(false);
-    } catch(error: any) {
-      toast(error.message || "Erro ao salvar cliente", "error");
+    } catch (error) {
+      toast(getErrorMessage(error, "Erro ao salvar cliente"), "error");
     }
     setSaving(false);
   };
@@ -98,9 +99,8 @@ export default function ClientsPage() {
     try {
       await remove(deleteId);
       toast("Cliente excluído!");
-    } catch(error: any) {
-      console.log('error' , error);
-      toast(error.message || "Erro ao excluir cliente", "error");
+    } catch (error) {
+      toast(getErrorMessage(error, "Erro ao excluir cliente"), "error");
     }
     setDeleteId(null);
   };

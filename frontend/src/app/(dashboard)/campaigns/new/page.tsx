@@ -13,6 +13,7 @@ import {
 import { useCampaigns } from "@/hooks/useCampaigns";
 import { useClientTypes } from "@/hooks/useClients";
 import { campaignSchema, CampaignFormData } from "@/lib/validators";
+import { getErrorMessage } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -50,8 +51,8 @@ export default function NewCampaignPage() {
       const generatedContent = await generateContent(clientType, objective);
       setValue("content", generatedContent, { shouldValidate: true });
       toast("Conteúdo gerado com IA!");
-    } catch {
-      toast("Erro ao gerar conteúdo com IA", "error");
+    } catch (error) {
+      toast(getErrorMessage(error, "Erro ao gerar conteúdo com IA"), "error");
     }
     setGenerating(false);
   };
@@ -66,16 +67,16 @@ export default function NewCampaignPage() {
         try {
           await send(campaign.id);
           toast("Campanha criada e enviada com sucesso!");
-        } catch {
-          toast("Campanha criada, mas falha ao enviar", "error");
+        } catch (sendError) {
+          toast(getErrorMessage(sendError, "Campanha criada, mas falha ao enviar"), "error");
         }
       } else {
         toast("Campanha criada como rascunho!");
       }
 
       router.push("/campaigns");
-    } catch {
-      toast("Erro ao criar campanha", "error");
+    } catch (error) {
+      toast(getErrorMessage(error, "Erro ao criar campanha"), "error");
     }
     setSaving(false);
   };

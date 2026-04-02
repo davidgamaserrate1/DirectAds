@@ -18,6 +18,7 @@ import { campaignsService } from "@/services/campaigns.service";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
+import { getErrorMessage } from "@/lib/api";
 
 export default function CampaignDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -32,8 +33,8 @@ export default function CampaignDetailPage() {
       const result = await campaignsService.send(id);
       toast(result.message || "Campanha enviada!");
       await refetch();
-    } catch {
-      toast("Erro ao enviar campanha", "error");
+    } catch (error) {
+      toast(getErrorMessage(error, "Erro ao enviar campanha"), "error");
     }
     setSending(false);
   };
