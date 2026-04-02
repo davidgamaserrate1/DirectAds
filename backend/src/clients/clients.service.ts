@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateClientDto } from './dto/create-client.dto';
 import { UpdateClientDto } from './dto/update-client.dto';
@@ -13,7 +13,7 @@ export class ClientsService {
     });
 
     if (existing) {
-      throw new NotFoundException('Já existe um cliente com este email');
+      throw new ConflictException('Já existe um cliente com este email');
     }
 
     return this.prisma.client.create({ data: dto });
@@ -50,7 +50,7 @@ export class ClientsService {
     });
 
     if (existing && existing.id !== id) {
-      throw new NotFoundException('Já existe um outro cliente com este email');
+      throw new ConflictException('Já existe um outro cliente com este email');
     }
 
     await this.findOne(id);
