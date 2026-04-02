@@ -6,14 +6,14 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Bot } from "lucide-react";
-import api from "@/lib/api";
 import { loginSchema, LoginFormData } from "@/lib/validators";
-import { AuthResponse } from "@/types";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/auth-context";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { login } = useAuth();
   const [error, setError] = useState("");
   const {
     register,
@@ -26,9 +26,7 @@ export default function LoginPage() {
   const onSubmit = async (data: LoginFormData) => {
     setError("");
     try {
-      const res = await api.post<AuthResponse>("/auth/login", data);
-      localStorage.setItem("token", res.data.accessToken);
-      localStorage.setItem("user", JSON.stringify(res.data.user));
+      await login(data);
       router.push("/dashboard");
     } catch {
       setError("Email ou senha inválidos");

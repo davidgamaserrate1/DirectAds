@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
   Users,
   Megaphone,
@@ -15,11 +15,7 @@ import {
   Sun,
 } from "lucide-react";
 import { useTheme } from "@/components/theme-provider";
-
-interface UserInfo {
-  name: string;
-  email: string;
-}
+import { useAuth } from "@/contexts/auth-context";
 
 function getInitials(name: string): string {
   return name
@@ -32,21 +28,13 @@ function getInitials(name: string): string {
 
 export function Sidebar() {
   const pathname = usePathname();
-  const router = useRouter();
+  const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [campaignsOpen, setCampaignsOpen] = useState(
     pathname.startsWith("/campaigns"),
   );
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const [user, setUser] = useState<UserInfo | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const stored = localStorage.getItem("user");
-    if (stored) {
-      setUser(JSON.parse(stored));
-    }
-  }, []);
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -57,12 +45,6 @@ export function Sidebar() {
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
-
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    router.push("/login");
-  };
 
   const isActive = (path: string) => pathname === path;
   const isCampaignActive = pathname.startsWith("/campaigns");
@@ -189,7 +171,7 @@ export function Sidebar() {
             style={{ backgroundColor: "var(--color-surface)" }}
           >
             <button
-              onClick={handleLogout}
+              onClick={logout}
               className="flex items-center gap-3 w-full px-4 py-3 text-sm text-[var(--color-accent,#ea5153)] hover:bg-[var(--color-surface-2)] transition-colors cursor-pointer"
             >
               <LogOut className="w-4 h-4" />

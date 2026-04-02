@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Users,
   PlusCircle,
@@ -11,7 +11,7 @@ import {
   Tag,
   Loader2,
 } from "lucide-react";
-import api from "@/lib/api";
+import { useClients, useClientTypes } from "@/hooks/useClients";
 import { Client } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,11 +21,10 @@ import { useToast } from "@/components/ui/toast";
 
 export default function ClientsPage() {
   const { toast } = useToast();
-  const [clients, setClients] = useState<Client[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { clients, loading, create, update, remove, refetch } = useClients();
+  const { types } = useClientTypes();
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState("");
-  const [types, setTypes] = useState<string[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -35,43 +34,29 @@ export default function ClientsPage() {
   const [formName, setFormName] = useState("");
   const [formEmail, setFormEmail] = useState("");
   const [formType, setFormType] = useState("");
+  const [customType, setCustomType] = useState(false);
 
-  const fetchClients = async () => {
-    try {
-      const res = await api.get("/clients");
-      setClients(res.data);
-    } catch {
-      toast("Erro ao carregar clientes", "error");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchClients();
-    api
-      .get("/clients/types")
-      .then((res) => setTypes(res.data))
-      .catch(() => {});
-  }, []);
-
-  const filtered = clients.filter((c) => {
-    if (filterType && c.type !== filterType) return false;
-    if (search) {
-      const q = search.toLowerCase();
-      return (
-        c.name.toLowerCase().includes(q) ||
-        c.email.toLowerCase().includes(q)
-      );
-    }
-    return true;
-  });
+  const filtered = useMemo(() =>
+    clients.filter((c) => {
+      if (filterType && c.type !== filterType) return false;
+      if (search) {
+        const q = search.toLowerCase();
+        return (
+          c.name.toLowerCase().includes(q) ||
+          c.email.toLowerCase().includes(q)
+        );
+      }
+      return true;
+    }),
+    [clients, filterType, search],
+  );
 
   const openCreateModal = () => {
     setEditingClient(null);
     setFormName("");
     setFormEmail("");
-    setFormType(types[0] || "");
+    setFormType("");
+    setCustomType(false);
     setModalOpen(true);
   };
 
@@ -80,6 +65,7 @@ export default function ClientsPage() {
     setFormName(client.name);
     setFormEmail(client.email);
     setFormType(client.type);
+    setCustomType(!types.includes(client.type));
     setModalOpen(true);
   };
 
@@ -90,22 +76,14 @@ export default function ClientsPage() {
     }
     setSaving(true);
     try {
+      const payload = { name: formName, email: formEmail, type: formType };
       if (editingClient) {
-        await api.patch(`/clients/${editingClient.id}`, {
-          name: formName,
-          email: formEmail,
-          type: formType,
-        });
+        await update(editingClient.id, payload);
         toast("Cliente atualizado!");
       } else {
-        await api.post("/clients", {
-          name: formName,
-          email: formEmail,
-          type: formType,
-        });
+        await create(payload);
         toast("Cliente criado!");
       }
-      fetchClients();
       setModalOpen(false);
     } catch {
       toast("Erro ao salvar cliente", "error");
@@ -116,8 +94,7 @@ export default function ClientsPage() {
   const handleDelete = async () => {
     if (!deleteId) return;
     try {
-      await api.delete(`/clients/${deleteId}`);
-      setClients((prev) => prev.filter((c) => c.id !== deleteId));
+      await remove(deleteId);
       toast("Cliente excluído!");
     } catch {
       toast("Erro ao excluir cliente", "error");
@@ -302,7 +279,7 @@ export default function ClientsPage() {
                   <p className="text-xs text-[var(--color-text-secondary)] truncate">
                     {client.email}
                   </p>
-                  <Badge className="mt-1">{client.type}</Badge>
+                  <Badge>{client.type}</Badge>
                 </div>
                 <div className="flex gap-1">
                   <button
@@ -356,17 +333,53 @@ export default function ClientsPage() {
             <label className="block text-sm font-medium text-[var(--color-text)] mb-1.5">
               Tipo
             </label>
-            <Input
-              placeholder="Ex: fitness, saude, tecnologia"
-              value={formType}
-              onChange={(e) => setFormType(e.target.value)}
-              list="client-types"
-            />
-            <datalist id="client-types">
-              {types.map((t) => (
-                <option key={t} value={t} />
-              ))}
-            </datalist>
+            {types.length > 0 && !customType && (
+              <div className="flex flex-wrap gap-2 mb-2">
+                {types.map((t) => (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => setFormType(t)}
+                    className="px-3 py-1.5 text-sm rounded-lg border transition-all cursor-pointer"
+                    style={{
+                      borderRadius: "var(--radius-md)",
+                      borderColor: formType === t ? "var(--color-primary)" : "var(--color-border)",
+                      backgroundColor: formType === t ? "var(--color-primary)" : "transparent",
+                      color: formType === t ? "#fff" : "var(--color-text)",
+                    }}
+                  >
+                    {t}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => { setCustomType(true); setFormType(""); }}
+                  className="px-3 py-1.5 text-sm rounded-lg border border-dashed border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] transition-all cursor-pointer"
+                  style={{ borderRadius: "var(--radius-md)" }}
+                >
+                  + Novo tipo
+                </button>
+              </div>
+            )}
+            {(customType || types.length === 0) && (
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Digite o novo tipo..."
+                  value={formType}
+                  onChange={(e) => setFormType(e.target.value)}
+                  autoFocus
+                />
+                {types.length > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => { setCustomType(false); setFormType(""); }}
+                  >
+                    Cancelar
+                  </Button>
+                )}
+              </div>
+            )}
           </div>
           <div className="flex gap-3 justify-end pt-2">
             <Button variant="secondary" onClick={() => setModalOpen(false)}>

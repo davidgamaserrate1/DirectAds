@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
@@ -8,7 +8,8 @@ import {
   Loader2,
   Send,
 } from "lucide-react";
-import api from "@/lib/api";
+import { useCampaigns } from "@/hooks/useCampaigns";
+import { useClientTypes } from "@/hooks/useClients";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -17,7 +18,8 @@ import { useToast } from "@/components/ui/toast";
 export default function NewCampaignPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const [clientTypes, setClientTypes] = useState<string[]>([]);
+  const { types: clientTypes } = useClientTypes();
+  const { create, send, generateContent } = useCampaigns();
   const [name, setName] = useState("");
   const [objective, setObjective] = useState("");
   const [clientType, setClientType] = useState("");
@@ -26,17 +28,6 @@ export default function NewCampaignPage() {
   const [saving, setSaving] = useState(false);
   const [sendAfterSave, setSendAfterSave] = useState(false);
 
-  useEffect(() => {
-    api
-      .get("/clients/types")
-      .then((res) => {
-        const types = res.data;
-        setClientTypes(types);
-        if (types.length > 0 && !clientType) setClientType(types[0]);
-      })
-      .catch(() => toast("Erro ao carregar tipos de clientes", "error"));
-  }, []);
-
   const handleGenerate = async () => {
     if (!clientType || !objective) {
       toast("Preencha o tipo de cliente e o objetivo primeiro", "error");
@@ -44,11 +35,8 @@ export default function NewCampaignPage() {
     }
     setGenerating(true);
     try {
-      const res = await api.post("/campaigns/generate-content", {
-        clientType,
-        objective,
-      });
-      setContent(res.data.content);
+      const generatedContent = await generateContent(clientType, objective);
+      setContent(generatedContent);
       toast("Conteúdo gerado com IA!");
     } catch {
       toast("Erro ao gerar conteúdo com IA", "error");
@@ -64,17 +52,11 @@ export default function NewCampaignPage() {
     setSaving(true);
     setSendAfterSave(shouldSend);
     try {
-      const res = await api.post("/campaigns", {
-        name,
-        clientType,
-        objective,
-        content,
-      });
-      const campaignId = res.data.id;
+      const campaign = await create({ name, clientType, objective, content });
 
       if (shouldSend) {
         try {
-          await api.post(`/campaigns/${campaignId}/send`);
+          await send(campaign.id);
           toast("Campanha criada e enviada com sucesso!");
         } catch {
           toast("Campanha criada, mas falha ao enviar", "error");

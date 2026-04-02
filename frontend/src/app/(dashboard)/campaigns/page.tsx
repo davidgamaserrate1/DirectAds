@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import {
   Megaphone,
@@ -12,8 +12,7 @@ import {
   Trash2,
   Calendar,
 } from "lucide-react";
-import api from "@/lib/api";
-import { Campaign } from "@/types";
+import { useCampaigns } from "@/hooks/useCampaigns";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
@@ -23,47 +22,33 @@ type FilterTab = "all" | "DRAFT" | "SENT";
 
 export default function CampaignsPage() {
   const { toast } = useToast();
-  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { campaigns, loading, remove, send } = useCampaigns();
   const [filter, setFilter] = useState<FilterTab>("all");
   const [search, setSearch] = useState("");
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [sendingId, setSendingId] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
-  const fetchCampaigns = async () => {
-    try {
-      const res = await api.get("/campaigns");
-      setCampaigns(res.data);
-    } catch {
-      toast("Erro ao carregar campanhas", "error");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const filtered = useMemo(() =>
+    campaigns.filter((c) => {
+      if (filter !== "all" && c.status !== filter) return false;
+      if (search && !c.name.toLowerCase().includes(search.toLowerCase()))
+        return false;
+      return true;
+    }),
+    [campaigns, filter, search],
+  );
 
-  useEffect(() => {
-    fetchCampaigns();
-  }, []);
-
-  const filtered = campaigns.filter((c) => {
-    if (filter !== "all" && c.status !== filter) return false;
-    if (search && !c.name.toLowerCase().includes(search.toLowerCase()))
-      return false;
-    return true;
-  });
-
-  const counts = {
+  const counts = useMemo(() => ({
     all: campaigns.length,
     SENT: campaigns.filter((c) => c.status === "SENT").length,
     DRAFT: campaigns.filter((c) => c.status === "DRAFT").length,
-  };
+  }), [campaigns]);
 
   const handleDelete = async () => {
     if (!deleteId) return;
     try {
-      await api.delete(`/campaigns/${deleteId}`);
-      setCampaigns((prev) => prev.filter((c) => c.id !== deleteId));
+      await remove(deleteId);
       toast("Campanha excluída com sucesso");
     } catch {
       toast("Erro ao excluir campanha", "error");
@@ -74,9 +59,8 @@ export default function CampaignsPage() {
   const handleSend = async (id: string) => {
     setSendingId(id);
     try {
-      const res = await api.post(`/campaigns/${id}/send`);
-      toast(res.data.message || "Campanha enviada!");
-      fetchCampaigns();
+      const result = await send(id);
+      toast(result.message || "Campanha enviada!");
     } catch {
       toast("Erro ao enviar campanha", "error");
     }

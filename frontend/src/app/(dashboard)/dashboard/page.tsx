@@ -1,49 +1,25 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 import { Users, Megaphone, Send } from "lucide-react";
-import api from "@/lib/api";
-import { Campaign } from "@/types";
+import { useCampaigns } from "@/hooks/useCampaigns";
+import { useClients } from "@/hooks/useClients";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 
-interface Stats {
-  totalClients: number;
-  totalCampaigns: number;
-  sentCampaigns: number;
-}
-
 export default function DashboardPage() {
-  const [stats, setStats] = useState<Stats>({
-    totalClients: 0,
-    totalCampaigns: 0,
-    sentCampaigns: 0,
-  });
-  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { clients, loading: loadingClients } = useClients();
+  const { campaigns, loading: loadingCampaigns } = useCampaigns();
 
-  useEffect(() => {
-    async function load() {
-      try {
-        const [clientsRes, campaignsRes] = await Promise.all([
-          api.get("/clients"),
-          api.get("/campaigns"),
-        ]);
-        const allCampaigns: Campaign[] = campaignsRes.data;
-        setStats({
-          totalClients: clientsRes.data.length,
-          totalCampaigns: allCampaigns.length,
-          sentCampaigns: allCampaigns.filter((c) => c.status === "SENT").length,
-        });
-        setCampaigns(allCampaigns.slice(0, 5));
-      } catch {
-        // silently fail
-      } finally {
-        setLoading(false);
-      }
-    }
-    load();
-  }, []);
+  const loading = loadingClients || loadingCampaigns;
+
+  const stats = useMemo(() => ({
+    totalClients: clients.length,
+    totalCampaigns: campaigns.length,
+    sentCampaigns: campaigns.filter((c) => c.status === "SENT").length,
+  }), [clients, campaigns]);
+
+  const recentCampaigns = useMemo(() => campaigns.slice(0, 5), [campaigns]);
 
   if (loading) {
     return (
@@ -144,13 +120,13 @@ export default function DashboardPage() {
           </Link>
         </div>
 
-        {campaigns.length === 0 ? (
+        {recentCampaigns.length === 0 ? (
           <div className="p-8 text-center text-sm text-[var(--color-text-secondary)]">
             Nenhuma campanha criada ainda.
           </div>
         ) : (
           <div className="divide-y divide-[var(--color-border)]">
-            {campaigns.map((campaign) => (
+            {recentCampaigns.map((campaign) => (
               <Link
                 key={campaign.id}
                 href={`/campaigns/${campaign.id}`}

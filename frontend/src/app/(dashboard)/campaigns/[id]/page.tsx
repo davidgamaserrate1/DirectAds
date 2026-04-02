@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
   ArrowLeft,
@@ -13,8 +13,8 @@ import {
   XCircle,
   Clock,
 } from "lucide-react";
-import api from "@/lib/api";
-import { CampaignDetail } from "@/types";
+import { useCampaignDetail } from "@/hooks/useCampaignDetail";
+import { campaignsService } from "@/services/campaigns.service";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
@@ -23,25 +23,15 @@ export default function CampaignDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { toast } = useToast();
-  const [campaign, setCampaign] = useState<CampaignDetail | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { campaign, loading, refetch } = useCampaignDetail(id);
   const [sending, setSending] = useState(false);
-
-  useEffect(() => {
-    api
-      .get(`/campaigns/${id}`)
-      .then((res) => setCampaign(res.data))
-      .catch(() => toast("Erro ao carregar campanha", "error"))
-      .finally(() => setLoading(false));
-  }, [id]);
 
   const handleSend = async () => {
     setSending(true);
     try {
-      const res = await api.post(`/campaigns/${id}/send`);
-      toast(res.data.message || "Campanha enviada!");
-      const updated = await api.get(`/campaigns/${id}`);
-      setCampaign(updated.data);
+      const result = await campaignsService.send(id);
+      toast(result.message || "Campanha enviada!");
+      await refetch();
     } catch {
       toast("Erro ao enviar campanha", "error");
     }
@@ -230,7 +220,7 @@ export default function CampaignDetailPage() {
                 )}
                 <div className="min-w-0 flex-1">
                   <p className="text-sm text-[var(--color-text)] truncate">
-                    {log.clientEmail}
+                    {log.client.email}
                   </p>
                   {log.error && (
                     <p className="text-xs text-[var(--color-accent)] truncate">
@@ -240,7 +230,7 @@ export default function CampaignDetailPage() {
                 </div>
                 <div className="flex items-center gap-1 text-xs text-[var(--color-text-secondary)] shrink-0">
                   <Clock className="w-3 h-3" />
-                  {formatDate(log.sentAt)}
+                  {formatDate(log.createdAt)}
                 </div>
               </div>
             ))}
