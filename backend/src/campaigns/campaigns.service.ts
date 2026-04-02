@@ -1,5 +1,6 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, BadRequestException, Logger, NotFoundException } from '@nestjs/common';
 import { CampaignStatus } from '@prisma/client';
+import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import { PrismaService } from '../prisma/prisma.service';
 import { AiService } from '../ai/ai.service';
 import { EmailService } from '../email/email.service';
@@ -9,11 +10,14 @@ import { UpdateCampaignDto } from './dto/update-campaign.dto';
 
 @Injectable()
 export class CampaignsService {
+  private readonly logger = new Logger(CampaignsService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly aiService: AiService,
     private readonly emailService: EmailService,
     private readonly clientsService: ClientsService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   async create(dto: CreateCampaignDto) {
@@ -67,59 +71,68 @@ export class CampaignsService {
     const campaign = await this.findOne(id);
     const clients = await this.clientsService.findByType(campaign.clientType);
 
-    const results = await Promise.allSettled(
-      clients.map(async (client) => {
-        try {
-          await this.emailService.sendCampaignEmail(
-            client.email,
-            campaign.name,
-            campaign.content,
-          );
-          await this.prisma.campaignLog.create({
-            data: {
-              campaignId: campaign.id,
-              clientId: client.id,
-              status: 'SENT',
-            },
-          });
-          return { clientId: client.id, status: 'SENT' as const };
-        } catch (error) {
-          const errorMessage =
-            error instanceof Error ? error.message : 'Erro desconhecido';
-          await this.prisma.campaignLog.create({
-            data: {
-              campaignId: campaign.id,
-              clientId: client.id,
-              status: 'ERROR',
-              error: errorMessage,
-            },
-          });
-          return {
-            clientId: client.id,
-            status: 'ERROR' as const,
-            error: errorMessage,
-          };
-        }
-      }),
-    );
+    if (!clients.length) {
+      throw new BadRequestException(
+        `Nenhum cliente encontrado com o tipo "${campaign.clientType}"`,
+      );
+    }
 
     await this.prisma.campaign.update({
       where: { id },
       data: { status: CampaignStatus.SENT },
     });
 
-    const sent = results.filter(
-      (r) => r.status === 'fulfilled' && r.value.status === 'SENT',
-    ).length;
-    const errors = results.filter(
-      (r) => r.status === 'fulfilled' && r.value.status === 'ERROR',
-    ).length;
+    this.eventEmitter.emit('campaign.send', {
+      campaign,
+      clients,
+    });
 
     return {
       campaignId: id,
       totalClients: clients.length,
-      sent,
-      errors,
+      message: 'Campanha em envio. Os emails estão sendo processados em background.',
     };
+  }
+
+  @OnEvent('campaign.send')
+  async handleCampaignSend(payload: {
+    campaign: { id: string; name: string; content: string };
+    clients: { id: string; email: string }[];
+  }) {
+    const { campaign, clients } = payload;
+    this.logger.log(
+      `Processando envio da campanha "${campaign.name}" para ${clients.length} clientes...`,
+    );
+
+    for (const client of clients) {
+      try {
+        await this.emailService.sendCampaignEmail(
+          client.email,
+          campaign.name,
+          campaign.content,
+        );
+        await this.prisma.campaignLog.create({
+          data: {
+            campaignId: campaign.id,
+            clientId: client.id,
+            status: 'SENT',
+          },
+        });
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : 'Erro desconhecido';
+        this.logger.error(`Erro ao enviar para ${client.email}: ${errorMessage}`);
+        await this.prisma.campaignLog.create({
+          data: {
+            campaignId: campaign.id,
+            clientId: client.id,
+            status: 'ERROR',
+            error: errorMessage,
+          },
+        });
+      }
+    }
+
+    this.logger.log(`Envio da campanha "${campaign.name}" finalizado.`);
   }
 }
