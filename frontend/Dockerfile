@@ -45,7 +45,6 @@ USER nextjs
 
 EXPOSE 3000
 
-# Start Next.js standalone on port 3001 (internal), nginx on port 3000 (public)
-ENV PORT=3001
+# Next.js standalone always on internal port 3001; nginx on $PORT (Railway) or 3000 (local)
 ENV HOSTNAME=0.0.0.0
-CMD sh -c "node server.js & nginx -g 'daemon off;'"
+CMD sh -c "sed -i \"s/listen 3000/listen ${PORT:-3000}/\" /etc/nginx/http.d/default.conf && PORT=3001 node server.js & nginx -g 'daemon off;'"
