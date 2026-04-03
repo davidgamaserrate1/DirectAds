@@ -37,9 +37,9 @@ COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 # Copy nginx config
 COPY nginx.conf /etc/nginx/http.d/default.conf
 
-# Ensure nginx can write to its temp/log dirs
+# Ensure nginx can write to its temp/log dirs and config
 RUN mkdir -p /var/lib/nginx/tmp /var/log/nginx \
- && chown -R nextjs:nodejs /var/lib/nginx /var/log/nginx /run/nginx
+ && chown -R nextjs:nodejs /var/lib/nginx /var/log/nginx /run/nginx /etc/nginx/http.d
 
 USER nextjs
 
