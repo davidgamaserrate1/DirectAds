@@ -26,7 +26,7 @@ export const clientsService = {
   },
 
   async update(id: string, params: UpdateClientParams): Promise<Client> {
-    const { data } = await api.patch<Client>(`/clients/${id}`, params);
+    const { data } = await api.put<Client>(`/clients/${id}`, params);
     return data;
   },
 
