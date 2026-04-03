@@ -32,7 +32,6 @@ COPY --from=builder --chown=nestjs:nodejs /app/prisma ./prisma
 USER nestjs
 
 EXPOSE 3001
-ENV PORT=3001
 
 # Run migrations, seed, then start the server
 CMD ["sh", "-c", "npx prisma migrate deploy && npx ts-node prisma/seed.ts && node dist/src/main.js"]

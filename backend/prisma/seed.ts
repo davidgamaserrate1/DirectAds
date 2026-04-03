@@ -40,18 +40,25 @@ async function main() {
     console.log(`✅ Client created: ${client.name} (${client.type})`);
   }
 
-  const campaign = await prisma.campaign.create({
-    data: {
-      name: 'Campanha Fitness Verão 2026',
-      objective: 'Aumentar engajamento e vendas de produtos fitness',
-      clientType: 'fitness',
-      content:
-        '🏋️ Chegou o Verão! Transforme seu corpo com nossos produtos fitness exclusivos. Aproveite 30% de desconto em toda a linha!',
-      status: 'DRAFT',
-    },
+  const existingCampaign = await prisma.campaign.findFirst({
+    where: { name: 'Campanha Fitness Verão 2026' },
   });
 
-  console.log(`✅ Campaign created: ${campaign.name}`);
+  if (!existingCampaign) {
+    const campaign = await prisma.campaign.create({
+      data: {
+        name: 'Campanha Fitness Verão 2026',
+        objective: 'Aumentar engajamento e vendas de produtos fitness',
+        clientType: 'fitness',
+        content:
+          '🏋️ Chegou o Verão! Transforme seu corpo com nossos produtos fitness exclusivos. Aproveite 30% de desconto em toda a linha!',
+        status: 'DRAFT',
+      },
+    });
+    console.log(`✅ Campaign created: ${campaign.name}`);
+  } else {
+    console.log(`✅ Campaign already exists: ${existingCampaign.name}`);
+  }
   console.log('🌱 Seed completed!');
 }
 
